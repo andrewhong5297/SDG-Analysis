@@ -13,6 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 
 import re
+
 # myurl='https://sdgs.un.org/goals'
 
 # req = requests.get(myurl)
@@ -166,12 +167,3 @@ for url in urls:
     
 data_partnerships = data_partnerships.fillna("null")
 data_partnerships.to_pickle(r'C:\Users\Andrew\Documents\PythonScripts\climate work\SDG Partnerships_raw.pkl')
-    
-import math 
-
-for col in cols[1:]:
-    print(col)
-    data_partnerships[col] = data_partnerships[col].apply(lambda x: x.replace('\n',"").strip())
-
-data_partnerships = data_partnerships[:14249]
-data_partnerships.to_pickle(r'C:\Users\Andrew\Documents\PythonScripts\climate work\SDG Partnerships.pkl')

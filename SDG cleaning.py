@@ -9,8 +9,21 @@ import pandas as pd
 import numpy as np
 import datetime
 
-df = pd.read_pickle(r'C:\Users\Andrew\Documents\PythonScripts\climate work\SDG article\SDG Partnerships.pkl')
+df = pd.read_pickle(r'C:\Users\Andrew\Documents\PythonScripts\climate work\SDG article\SDG-analysis\SDG Partnerships_raw.pkl')
 
+'''stripping'''
+cols = ["goal","partner_name","url","entity","partners_of_partner","description","date_start",
+        "date_end","geographic_coverage","beneficiary_countires","based"]
+
+import math 
+
+for col in cols[1:]:
+    print(col)
+    df[col] = df[col].apply(lambda x: x.replace('\n'," ").strip())
+
+df = df[:14249]
+
+'''date stuff'''
 #fix ame: scraping error
 dates_data = df["date_start"]
 for idx,date in enumerate(dates_data):
@@ -90,6 +103,7 @@ for idx,end in enumerate(df["year_end"]):
     except:
         df["length_of_partnership"][idx] = 'ignore'
 
+'''desc stuff'''
 #translate other languages to english description
 from googletrans import Translator
 from langdetect import detect
@@ -114,5 +128,18 @@ for desc in df["description"][i:]:
             print('waiting...')
             break #break when connection error occurs
     i+=1
+
+def remove_weird_letters(x):
+    new_string = ""
+    accepted_char = list(string.ascii_lowercase) + list(string.ascii_uppercase) + list(string.punctuation) + list(" ")
     
-df.to_pickle(r'C:\Users\Andrew\Documents\PythonScripts\climate work\SDG article\SDG Partnerships_clean.pkl')
+    for letter in x:
+        for char in accepted_char:
+            if char in letter:
+                new_string = new_string + char
+                break
+    return new_string
+
+df["description"] = df["description"].apply(lambda x: remove_weird_letters(x))
+
+df.to_pickle(r'C:\Users\Andrew\Documents\PythonScripts\climate work\SDG articl\SDG-analysis\SDG Partnerships_clean.pkl')
