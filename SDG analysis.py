@@ -123,12 +123,9 @@ timeline[:-1].plot(kind="line", figsize=(10,10))
 
 a = df[df["length_of_partnership"]!='ignore']["length_of_partnership"]
 a = a[a>0]
-a = a.reset_index()
 a.hist(figsize=(8,4),bins=30).set(title="Length of Partnerships")
 
 '''NLP PCA'''
-import string
-
 from nltk.corpus import stopwords
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -184,7 +181,6 @@ plt.ylabel('variance %')
 plt.xticks(features)
 plt.show()
 
-from gensim.summarization import summarize
 # Save components to a DataFrame
 PCA_components = pd.DataFrame(principalComponents)
 PCA_components["goal"] = corpus["goal"]
@@ -248,14 +244,14 @@ i=0
 chosen_symbols=[]
 while i < len(corpus["goal"].unique()):
     fig['data'][i]['marker']['symbol'] = random.choice(symbols[:30]) #chosen_symbols[i]
-    i+=1 #comment out if symbols haven't been chosen 
+    # i+=1 #comment out if symbols haven't been chosen 
     if fig['data'][i]['marker']['symbol'] in chosen_symbols:
         print('getting new symbol')
     else:
         chosen_symbols.append(fig['data'][i]['marker']['symbol'])        
         i+=1
 
-plot(fig, filename="pca_.html")
+# plot(fig, filename="pca_.html")
 
 # PCA_components_dash = PCA_components[PCA_components["Year"]!='ignore']
 # PCA_components_dash = PCA_components_dash[PCA_components_dash["Year"]!= np.nan]
@@ -316,52 +312,59 @@ plot(fig, filename="pca_.html")
 # if __name__ == '__main__':
 #     app.run_server(debug=False)
     
-import time
-from sklearn.manifold import TSNE
+# import time
+# from sklearn.manifold import TSNE
 
-time_start = time.time()
-tsne = TSNE(n_components=2, verbose=1, perplexity=50, n_iter=300)
-tsne_results = tsne.fit_transform(PCA_components.iloc[:,:2])
+# time_start = time.time()
+# tsne = TSNE(n_components=2, verbose=1, perplexity=50, n_iter=300)
+# tsne_results = tsne.fit_transform(PCA_components.iloc[:,:2])
 
-PCA_components["tsne-one"]=tsne_results[:,0]
-PCA_components["tsne-two"]=tsne_results[:,1]
+# PCA_components["tsne-one"]=tsne_results[:,0]
+# PCA_components["tsne-two"]=tsne_results[:,1]
 
-PCA_components.dropna(inplace=True)
-import plotly.express as px
-from plotly.offline import plot
-fig = px.scatter(PCA_components, x="tsne-one", y="tsne-two", color=colortype, hover_data=['goal',PCA_components.index],
-                  opacity=0.3)
-fig.update_layout(legend=dict(
-    yanchor="top",
-    y=0.99,
-    xanchor="right",
-    x=3
-))
+# PCA_components.dropna(inplace=True)
+# import plotly.express as px
+# from plotly.offline import plot
+# fig = px.scatter(PCA_components, x="tsne-one", y="tsne-two", color=colortype, hover_data=['goal',PCA_components.index],
+#                   opacity=0.3)
+# fig.update_layout(legend=dict(
+#     yanchor="top",
+#     y=0.99,
+#     xanchor="right",
+#     x=3
+# ))
 
-i=0
-#use same chosen_symbols as above
-while i < len(corpus["goal"].unique()):
-    fig['data'][i]['marker']['symbol'] = random.choice(symbols[:30])
-    i+=1
+# i=0
+# #use same chosen_symbols as above
+# while i < len(corpus["goal"].unique()):
+#     fig['data'][i]['marker']['symbol'] = random.choice(symbols[:30])
+#     i+=1
 
-plot(fig, filename="tsne.html")
+# plot(fig, filename="tsne.html")
 
 #create a function that finds top keywords in a certain cluster? take in x and y bounds then sort by sum(axis=0)? 
+
+from gensim.summarization import summarize
+
 def area_search_function(x_min,x_max,y_min,y_max,df):
-    df_t = key_df[(df[0] > x_min) &
+    summary = ""
+    df_t = corpus[(df[0] > x_min) &
             (df[0] < x_max) &
             (df[1] > y_min) &
             (df[1] < y_max)]
-    count_keywords = df_t.sum(axis=0).sort_values(ascending=False)
-    return count_keywords
+    all_desc = df_t["description"]
+    for desc in all_desc:
+        try:
+            summary = summary + desc
+        except:
+            print(desc)
+    return summarize(summary, word_count=300)
 
 #maybe we can get summaries instead?
 
-keywords_left = area_search_function(-0.2,0,-0.15,0,PCA_components)
-keywords_left = keywords_left.reset_index()
+summary_left = area_search_function(-0.2,0,-0.15,0,PCA_components)
 
-keywords_right = area_search_function(0,0.3,-0.1,0.1,PCA_components)
-keywords_right = keywords_right.reset_index()
+summary_right = area_search_function(0,0.3,-0.1,0.1,PCA_components)
 
 '''similarity matrix'''
 # #cosine similarity search function https://www.machinelearningplus.com/nlp/cosine-similarity/ #not enough memory 
@@ -370,7 +373,7 @@ keywords_right = keywords_right.reset_index()
 # clust_df["url"] = corpus["url"]
 # clust_df.set_index(["goal","url"])
 # cosine_search = cosine_similarity(clust_df, clust_df)
-
+import time
 import gensim
 from gensim.matutils import softcossim 
 from gensim import corpora
@@ -379,14 +382,15 @@ from gensim.utils import simple_preprocess
 
 fasttext_model300 = api.load('fasttext-wiki-news-subwords-300')
 # Prepare a dictionary and a corpus.
-dictionary = corpora.Dictionary([simple_preprocess(doc) for doc in df["description"][330:340]])
+start = time.time()
+dictionary = corpora.Dictionary([simple_preprocess(doc) for doc in corpus["description"]])
 
 # Prepare the similarity matrix
 similarity_matrix = fasttext_model300.similarity_matrix(dictionary, tfidf=None, threshold=0.0, exponent=2.0, nonzero_limit=100)
 
 # Convert the sentences into bag-of-words vectors.
 sentences = []
-for doc in df["description"][330:340]:
+for doc in corpus["description"]:
     doc_x = dictionary.doc2bow(simple_preprocess(doc))
     sentences.append(doc_x)
 
@@ -398,6 +402,9 @@ def create_soft_cossim_matrix(sentences):
 
 cosine = create_soft_cossim_matrix(sentences)
 
+end = time.time()
+elapse = (end-start)/60
+
 cosine.to_csv(r'C:\Users\Andrew\Documents\PythonScripts\climate work\SDG article\SDG-Analysis\cosine.csv')
 
 def search_cosine(idx):
@@ -407,52 +414,65 @@ def search_cosine(idx):
 
 first_search = search_cosine(10)
 
+# from gensim.test.utils import common_texts
+# from gensim.corpora import Dictionary
+# from gensim.models import Word2Vec, WordEmbeddingSimilarityIndex
+# from gensim.similarities import SoftCosineSimilarity, SparseTermSimilarityMatrix
+
+# model = Word2Vec(common_texts, size=20, min_count=1)  # train word-vectors on your own text
+# termsim_index = WordEmbeddingSimilarityIndex(model.wv) #use FastText.wv here 
+
+# dictionary = Dictionary(corpus["description"]) 
+# bow_corpus = [dictionary.doc2bow(document) for document in corpus["description"]]
+
+# # similarity_matrix = fasttext_model300.similarity_matrix(dictionary, tfidf=None, threshold=0.0, exponent=2.0, nonzero_limit=100)
+# similarity_matrix = SparseTermSimilarityMatrix(termsim_index, dictionary)  # construct similarity matrix
+# docsim_index = SoftCosineSimilarity(bow_corpus, similarity_matrix, num_best=10)
+
 '''resource search'''
-####set resource conditions
-# technology = ['tech', 'IT', 'digital', 'data']
-# training = ['teach','train', 'skill', 'courses', 'class']
-# food = ['seeds', 'agriculture', 'irrigation']
-# fiscal = ['subsidy', 'fund', 'trade', 'finance', 'investment']
-# research = ['research', 'framework', 'assess', 'monitor']
-# conservation = ['conservation', 'civil engineer', 'biodiversity']
-# legal_politcal = ['democratic', 'rights', 'policy', 'law']
+###set resource conditions
+technology = ['tech', 'IT', 'digital', 'data']
+training = ['teach','train', 'skill', 'courses', 'class']
+food = ['seeds', 'agriculture', 'irrigation']
+fiscal = ['subsidy', 'fund', 'trade', 'finance', 'investment']
+research = ['research', 'framework', 'assess', 'monitor']
+conservation = ['conservation', 'civil engineer', 'biodiversity']
+legal_politcal = ['democratic', 'rights', 'policy', 'law']
 
-# all_resources = [technology, training, food, fiscal, research, conservation, legal_politcal]
-# all_resources_words = ['technology','training', 'food', 'fiscal', 'research', 'conservation', 'legal_politcal','other']
-# #get one-hot dataframe
-# resource_tracker = []
-# for idx,desc in enumerate(df["description"]):
-#     print(idx)
-#     current_desc = []
-#     for idx,resource in enumerate(all_resources):
-#         for keyword in resource:
-#             if keyword in desc:
-#                 current_desc.append(all_resources_words[idx])
-#     if len(current_desc)==0:
-#         current_desc.append(all_resources_words[-1])
-#     resource_tracker.append(current_desc)
+all_resources = [technology, training, food, fiscal, research, conservation, legal_politcal]
+all_resources_words = ['technology','training', 'food', 'fiscal', 'research', 'conservation', 'legal_politcal','other']
+#get one-hot dataframe
+resource_tracker = []
+for idx,desc in enumerate(df["description"]):
+    print(idx)
+    current_desc = []
+    for idx,resource in enumerate(all_resources):
+        for keyword in resource:
+            if keyword in desc:
+                current_desc.append(all_resources_words[idx])
+    if len(current_desc)==0:
+        current_desc.append(all_resources_words[-1])
+    resource_tracker.append(current_desc)
 
-# #plot bar
-# pd.Series(resource_tracker).value_counts()[:30].plot.barh(figsize=(8,8)).set(title="Top Resources by Partnership")
+#plot bar
+pd.Series(resource_tracker).value_counts()[:30].plot.barh(figsize=(8,8)).set(title="Top Resources by Partnership")
 
-# mlb = MultiLabelBinarizer()
+mlb = MultiLabelBinarizer()
 
-# resource_df = pd.DataFrame(mlb.fit_transform(resource_tracker),
-#                    columns=mlb.classes_,
-#                    index=geo.index)
+resource_df = pd.DataFrame(mlb.fit_transform(resource_tracker),
+                    columns=mlb.classes_,
+                    index=geo.index)
 
-# count_resource_df = pd.concat([df,resource_df],axis=1)
-# pivot = count_resource_df.pivot_table(index="goal",values = all_resources_words,aggfunc='sum')
-# pivot.reset_index(inplace=True)
-# pivot["goal"] = pivot["goal"].apply(lambda x: goal_dict[x])
-# pivot.set_index("goal",inplace=True)
-# pivot = pivot[all_resources_words]
-# fig = px.bar(pivot,orientation='h')
-# # plot(fig, filename="resources_stacked.html")
+count_resource_df = pd.concat([df,resource_df],axis=1)
+pivot = count_resource_df.pivot_table(index="goal",values = all_resources_words,aggfunc='sum')
+pivot.reset_index(inplace=True)
+pivot["goal"] = pivot["goal"].apply(lambda x: goal_dict[x])
+pivot.set_index("goal",inplace=True)
+pivot = pivot[all_resources_words]
+fig = px.bar(pivot,orientation='h')
+plot(fig, filename="resources_stacked.html")
 
-# pivot_pct = pivot.div(pivot.sum(axis=1),axis=0)
-# fig = px.bar(pivot_pct,orientation='h')
-# # plot(fig, filename="resources_pct.html")
+pivot_pct = pivot.div(pivot.sum(axis=1),axis=0)
+fig = px.bar(pivot_pct,orientation='h')
+plot(fig, filename="resources_pct.html")
 
-
-#px.bar(pivot where goals are rows, resources are the columns)
