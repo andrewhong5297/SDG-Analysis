@@ -58,7 +58,7 @@ geo_df = pd.DataFrame(mlb.fit_transform(geo["beneficiary_countires"]),
 
 count_geo_df = geo_df.sum().sort_values(ascending=False)
 count_geo_df = count_geo_df.reset_index()
-count_geo_df = count_geo_df.drop([2,3,15])
+count_geo_df = count_geo_df.drop([0,3,14])
 count_geo_df.set_index("index",inplace=True)
 count_geo_df[:20].plot.barh(figsize=(8,4),legend=False).set_title("Top Beneficiaries of Partnerships")
 
@@ -126,130 +126,131 @@ a = a[a>0]
 a.hist(figsize=(8,4),bins=30).set(title="Length of Partnerships")
 
 '''NLP PCA'''
-from nltk.corpus import stopwords
-from nltk.stem.wordnet import WordNetLemmatizer
-from nltk.tokenize import word_tokenize, sent_tokenize
-from sklearn.feature_extraction.text import CountVectorizer #acts like a model pretty much
+# from nltk.corpus import stopwords
+# from nltk.stem.wordnet import WordNetLemmatizer
+# from nltk.tokenize import word_tokenize, sent_tokenize
+# from sklearn.feature_extraction.text import CountVectorizer #acts like a model pretty much
 
 corpus = df[df["description"]!=""] #not empty
 
-stop_words = stopwords.words("english")
-lemmatizer = WordNetLemmatizer()
+# stop_words = stopwords.words("english")
+# lemmatizer = WordNetLemmatizer()
 
-def tokenize(text):
-    # normalize case and remove punctuation
-    text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
+# def tokenize(text):
+#     # normalize case and remove punctuation
+#     text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
     
-    # tokenize text
-    tokens = word_tokenize(text)
+#     # tokenize text
+#     tokens = word_tokenize(text)
     
-    # lemmatize andremove stop words
-    tokens = [lemmatizer.lemmatize(word) for word in tokens if word not in stop_words]
+#     # lemmatize andremove stop words
+#     tokens = [lemmatizer.lemmatize(word) for word in tokens if word not in stop_words]
 
-    return tokens
-# initialize count vectorizer object
-vect = CountVectorizer(tokenizer=tokenize)
-X = vect.fit_transform(corpus["description"]) # [] needs to be wrapped around the string to make it a "document" if you select single element
-vect.vocabulary_
+#     return tokens
+# # initialize count vectorizer object
+# vect = CountVectorizer(tokenizer=tokenize)
+# X = vect.fit_transform(corpus["description"]) # [] needs to be wrapped around the string to make it a "document" if you select single element
+# vect.vocabulary_
 
-#keywords
-key_df = pd.DataFrame(data=X.toarray())
-key_df.columns = vect.vocabulary_
-key = key_df.sum()
+# #keywords
+# key_df = pd.DataFrame(data=X.toarray())
+# key_df.columns = vect.vocabulary_
+# key = key_df.sum()
 
-from sklearn.feature_extraction.text import TfidfTransformer
+# from sklearn.feature_extraction.text import TfidfTransformer
 
-# initialize tf-idf transformer object
-transformer = TfidfTransformer(smooth_idf=False)
-tfidf_X = transformer.fit_transform(X)
+# # initialize tf-idf transformer object
+# transformer = TfidfTransformer(smooth_idf=False)
+# tfidf_X = transformer.fit_transform(X)
 
-#plotting
-import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
-clust_df = pd.DataFrame(data=tfidf_X.toarray()) #try PCA on both tfidf and bag of words
-clust_df.columns = vect.vocabulary_
+# #plotting
+# import matplotlib.pyplot as plt
+# from sklearn.cluster import KMeans
+# from sklearn.decomposition import PCA, KernelPCA
+# clust_df = pd.DataFrame(data=tfidf_X.toarray()) #try PCA on both tfidf and bag of words
+# clust_df.columns = vect.vocabulary_
 
-pca = PCA(n_components=20)
-principalComponents = pca.fit_transform(clust_df) #replace this with cosine matrix instead when you run that
+# # pca = KernelPCA(kernel = "rbf", n_components=20, gamma=10)
+# pca = PCA(n_components=20)
+# principalComponents = pca.fit_transform(clust_df) #replace this with cosine matrix instead when you run that
 
-# Plot the explained variances
-features = range(pca.n_components_)
-plt.bar(features, pca.explained_variance_ratio_, color='black')
-plt.xlabel('PCA features')
-plt.ylabel('variance %')
-plt.xticks(features)
-plt.show()
+# # Plot the explained variances
+# features = range(pca.n_components_)
+# plt.bar(features, pca.explained_variance_ratio_, color='black')
+# plt.xlabel('PCA features')
+# plt.ylabel('variance %')
+# plt.xticks(features)
+# plt.show()
 
-# Save components to a DataFrame
-PCA_components = pd.DataFrame(principalComponents)
-PCA_components["goal"] = corpus["goal"]
-PCA_components["url"] = corpus["url"]
+# # Save components to a DataFrame
+# PCA_components = pd.DataFrame(principalComponents)
+# PCA_components["goal"] = corpus["goal"]
+# PCA_components["url"] = corpus["url"]
 
-PCA_components["Year"] = corpus["year_start"]
+# PCA_components["Year"] = corpus["year_start"]
 
-symbols = [0, 'circle', 100, 'circle-open', 200, 'circle-dot', 300,
-            'circle-open-dot', 1, 'square', 101, 'square-open', 201,
-            'square-dot', 301, 'square-open-dot', 2, 'diamond', 102,
-            'diamond-open', 202, 'diamond-dot', 302,
-            'diamond-open-dot', 3, 'cross', 103, 'cross-open', 203,
-            'cross-dot', 303, 'cross-open-dot', 4, 'x', 104, 'x-open',
-            204, 'x-dot', 304, 'x-open-dot', 5, 'triangle-up', 105,
-            'triangle-up-open', 205, 'triangle-up-dot', 305,
-            'triangle-up-open-dot', 6, 'triangle-down', 106,
-            'triangle-down-open', 206, 'triangle-down-dot', 306,
-            'triangle-down-open-dot', 7, 'triangle-left', 107,
-            'triangle-left-open', 207, 'triangle-left-dot', 307,
-            'triangle-left-open-dot', 8, 'triangle-right', 108,
-            'triangle-right-open', 208, 'triangle-right-dot', 308,
-            'triangle-right-open-dot', 9, 'triangle-ne', 109,
-            'triangle-ne-open', 209, 'triangle-ne-dot', 309,
-            'triangle-ne-open-dot', 10, 'triangle-se', 110,
-            'triangle-se-open', 210, 'triangle-se-dot', 310,
-            'triangle-se-open-dot', 11, 'triangle-sw', 111,
-            'triangle-sw-open', 211, 'triangle-sw-dot', 311,
-            'triangle-sw-open-dot', 12, 'triangle-nw', 112,
-            'triangle-nw-open', 212, 'triangle-nw-dot', 312,
-            'triangle-nw-open-dot', 13, 'pentagon', 113,
-            'pentagon-open', 213, 'pentagon-dot', 313,
-            'pentagon-open-dot', 14, 'hexagon', 114, 'hexagon-open',
-            214, 'hexagon-dot', 314, 'hexagon-open-dot', 15,
-            'hexagon2', 115, 'hexagon2-open', 215, 'hexagon2-dot',
-            315, 'hexagon2-open-dot', 16, 'octagon', 116,
-            'octagon-open', 216, 'octagon-dot', 316,
-            'octagon-open-dot', 17, 'star', 117, 'star-open', 217,
-            'star-dot', 317, 'star-open-dot', 18, 'hexagram', 118,
-            'hexagram-open', 218, 'hexagram-dot', 318,
-            'hexagram-open-dot', 19, 'star-triangle-up', 119]
+# symbols = [0, 'circle', 100, 'circle-open', 200, 'circle-dot', 300,
+#             'circle-open-dot', 1, 'square', 101, 'square-open', 201,
+#             'square-dot', 301, 'square-open-dot', 2, 'diamond', 102,
+#             'diamond-open', 202, 'diamond-dot', 302,
+#             'diamond-open-dot', 3, 'cross', 103, 'cross-open', 203,
+#             'cross-dot', 303, 'cross-open-dot', 4, 'x', 104, 'x-open',
+#             204, 'x-dot', 304, 'x-open-dot', 5, 'triangle-up', 105,
+#             'triangle-up-open', 205, 'triangle-up-dot', 305,
+#             'triangle-up-open-dot', 6, 'triangle-down', 106,
+#             'triangle-down-open', 206, 'triangle-down-dot', 306,
+#             'triangle-down-open-dot', 7, 'triangle-left', 107,
+#             'triangle-left-open', 207, 'triangle-left-dot', 307,
+#             'triangle-left-open-dot', 8, 'triangle-right', 108,
+#             'triangle-right-open', 208, 'triangle-right-dot', 308,
+#             'triangle-right-open-dot', 9, 'triangle-ne', 109,
+#             'triangle-ne-open', 209, 'triangle-ne-dot', 309,
+#             'triangle-ne-open-dot', 10, 'triangle-se', 110,
+#             'triangle-se-open', 210, 'triangle-se-dot', 310,
+#             'triangle-se-open-dot', 11, 'triangle-sw', 111,
+#             'triangle-sw-open', 211, 'triangle-sw-dot', 311,
+#             'triangle-sw-open-dot', 12, 'triangle-nw', 112,
+#             'triangle-nw-open', 212, 'triangle-nw-dot', 312,
+#             'triangle-nw-open-dot', 13, 'pentagon', 113,
+#             'pentagon-open', 213, 'pentagon-dot', 313,
+#             'pentagon-open-dot', 14, 'hexagon', 114, 'hexagon-open',
+#             214, 'hexagon-dot', 314, 'hexagon-open-dot', 15,
+#             'hexagon2', 115, 'hexagon2-open', 215, 'hexagon2-dot',
+#             315, 'hexagon2-open-dot', 16, 'octagon', 116,
+#             'octagon-open', 216, 'octagon-dot', 316,
+#             'octagon-open-dot', 17, 'star', 117, 'star-open', 217,
+#             'star-dot', 317, 'star-open-dot', 18, 'hexagram', 118,
+#             'hexagram-open', 218, 'hexagram-dot', 318,
+#             'hexagram-open-dot', 19, 'star-triangle-up', 119]
 
-plt.scatter(PCA_components[0], PCA_components[1], alpha=.1, color='blue')
-plt.xlabel('PCA 1')
-plt.ylabel('PCA 2')
-plt.show()
+# plt.scatter(PCA_components[0], PCA_components[1], alpha=.1, color='blue')
+# plt.xlabel('PCA 1')
+# plt.ylabel('PCA 2')
+# plt.show()
 
-colortype = "goal"
+# colortype = "goal"
 
-import plotly.express as px
-from plotly.offline import plot
-import random
-PCA_filtered = PCA_components[PCA_components['url'].isin(url_unique.index)] #can't filter until the rest has already been run once
-fig = px.scatter(PCA_filtered, x=0, y=1, color=colortype, hover_data=['goal',PCA_filtered.index],opacity=0.7)
-fig.update_layout(legend=dict(
-    yanchor="top",
-    y=0.99,
-    xanchor="right",
-    x=3
-))
-i=0
-chosen_symbols=[]
-while i < len(corpus["goal"].unique()):
-    fig['data'][i]['marker']['symbol'] = random.choice(symbols[:30]) #chosen_symbols[i]
-    # i+=1 #comment out if symbols haven't been chosen 
-    if fig['data'][i]['marker']['symbol'] in chosen_symbols:
-        print('getting new symbol')
-    else:
-        chosen_symbols.append(fig['data'][i]['marker']['symbol'])        
-        i+=1
+# import plotly.express as px
+# from plotly.offline import plot
+# import random
+# PCA_filtered = PCA_components[PCA_components['url'].isin(url_unique.index)] #can't filter until the rest has already been run once
+# fig = px.scatter(PCA_filtered, x=0, y=1, color=colortype, hover_data=['goal',PCA_filtered.index],opacity=0.7)
+# fig.update_layout(legend=dict(
+#     yanchor="top",
+#     y=0.99,
+#     xanchor="right",
+#     x=3
+# ))
+# i=0
+# chosen_symbols=[]
+# while i < len(corpus["goal"].unique()):
+#     fig['data'][i]['marker']['symbol'] = random.choice(symbols[:30]) #chosen_symbols[i]
+#     # i+=1 #comment out if symbols haven't been chosen 
+#     if fig['data'][i]['marker']['symbol'] in chosen_symbols:
+#         print('getting new symbol')
+#     else:
+#         chosen_symbols.append(fig['data'][i]['marker']['symbol'])        
+#         i+=1
 
 # plot(fig, filename="pca_.html")
 
@@ -342,32 +343,31 @@ while i < len(corpus["goal"].unique()):
 
 # plot(fig, filename="tsne.html")
 
-#create a function that finds top keywords in a certain cluster? take in x and y bounds then sort by sum(axis=0)? 
+'''summarize area search of PCA'''
+# from gensim.summarization import summarize
 
-from gensim.summarization import summarize
+# def area_search_function(x_min,x_max,y_min,y_max,df):
+#     summary = ""
+#     df_t = corpus[(df[0] > x_min) &
+#             (df[0] < x_max) &
+#             (df[1] > y_min) &
+#             (df[1] < y_max)]
+#     all_desc = df_t["description"]
+#     for desc in all_desc:
+#         try:
+#             summary = summary + desc
+#         except:
+#             print(desc)
+#     return summarize(summary, word_count=300)
 
-def area_search_function(x_min,x_max,y_min,y_max,df):
-    summary = ""
-    df_t = corpus[(df[0] > x_min) &
-            (df[0] < x_max) &
-            (df[1] > y_min) &
-            (df[1] < y_max)]
-    all_desc = df_t["description"]
-    for desc in all_desc:
-        try:
-            summary = summary + desc
-        except:
-            print(desc)
-    return summarize(summary, word_count=300)
+# #maybe we can get summaries instead?
 
-#maybe we can get summaries instead?
+# summary_left = area_search_function(-0.2,0,-0.15,0,PCA_components)
 
-summary_left = area_search_function(-0.2,0,-0.15,0,PCA_components)
-
-summary_right = area_search_function(0,0.3,-0.1,0.1,PCA_components)
+# summary_right = area_search_function(0,0.3,-0.1,0.1,PCA_components)
 
 '''similarity matrix'''
-# #cosine similarity search function https://www.machinelearningplus.com/nlp/cosine-similarity/ #not enough memory 
+# #cosine similarity search function https://www.machinelearningplus.com/nlp/cosine-similarity/ 
 # from sklearn.metrics.pairwise import cosine_similarity
 # clust_df["goal"] = corpus["goal"]
 # clust_df["url"] = corpus["url"]
@@ -375,59 +375,38 @@ summary_right = area_search_function(0,0.3,-0.1,0.1,PCA_components)
 # cosine_search = cosine_similarity(clust_df, clust_df)
 import time
 import gensim
-from gensim.matutils import softcossim 
-from gensim import corpora
 import gensim.downloader as api
 from gensim.utils import simple_preprocess
+# https://stackabuse.com/python-for-nlp-working-with-the-gensim-library-part-1/ good primer on tokenizing with gensim
 
 fasttext_model300 = api.load('fasttext-wiki-news-subwords-300')
-# Prepare a dictionary and a corpus.
-start = time.time()
-dictionary = corpora.Dictionary([simple_preprocess(doc) for doc in corpus["description"]])
 
-# Prepare the similarity matrix
-similarity_matrix = fasttext_model300.similarity_matrix(dictionary, tfidf=None, threshold=0.0, exponent=2.0, nonzero_limit=100)
-
-# Convert the sentences into bag-of-words vectors.
-sentences = []
-for doc in corpus["description"]:
-    doc_x = dictionary.doc2bow(simple_preprocess(doc))
-    sentences.append(doc_x)
-
-def create_soft_cossim_matrix(sentences):
-    len_array = np.arange(len(sentences))
-    xx, yy = np.meshgrid(len_array, len_array)
-    cossim_mat = pd.DataFrame([[round(softcossim(sentences[i],sentences[j], similarity_matrix) ,2) for i, j in zip(x,y)] for y, x in zip(xx, yy)])
-    return cossim_mat
-
-cosine = create_soft_cossim_matrix(sentences)
-
-end = time.time()
-elapse = (end-start)/60
-
-cosine.to_csv(r'C:\Users\Andrew\Documents\PythonScripts\climate work\SDG article\SDG-Analysis\cosine.csv')
-
-def search_cosine(idx):
-    row = cosine.iloc[idx,:]
-    row = row.sort_values(ascending=False)
-    return row[:20]
-
-first_search = search_cosine(10)
-
-# from gensim.test.utils import common_texts
-# from gensim.corpora import Dictionary
-# from gensim.models import Word2Vec, WordEmbeddingSimilarityIndex
-# from gensim.similarities import SoftCosineSimilarity, SparseTermSimilarityMatrix
+from gensim.test.utils import common_texts
+from gensim.corpora import Dictionary
+from gensim.models import Word2Vec, WordEmbeddingSimilarityIndex
+from gensim.similarities import SoftCosineSimilarity, SparseTermSimilarityMatrix
+#termsim
 
 # model = Word2Vec(common_texts, size=20, min_count=1)  # train word-vectors on your own text
-# termsim_index = WordEmbeddingSimilarityIndex(model.wv) #use FastText.wv here 
+termsim_index = WordEmbeddingSimilarityIndex(fasttext_model300.wv) #use FastText.wv here if you want instead of model.uw
 
-# dictionary = Dictionary(corpus["description"]) 
-# bow_corpus = [dictionary.doc2bow(document) for document in corpus["description"]]
+dictionary = Dictionary([simple_preprocess(doc) for doc in corpus["description"]]) 
+bow_corpus = [dictionary.doc2bow(simple_preprocess(document)) for document in corpus["description"]]
 
-# # similarity_matrix = fasttext_model300.similarity_matrix(dictionary, tfidf=None, threshold=0.0, exponent=2.0, nonzero_limit=100)
-# similarity_matrix = SparseTermSimilarityMatrix(termsim_index, dictionary)  # construct similarity matrix
-# docsim_index = SoftCosineSimilarity(bow_corpus, similarity_matrix, num_best=10)
+# similarity_matrix = fasttext_model300.similarity_matrix(dictionary, tfidf=None, threshold=0.0, exponent=2.0, nonzero_limit=100)
+similarity_matrix = SparseTermSimilarityMatrix(termsim_index, dictionary)  # construct similarity  with L2 norm on inner product
+docsim_index = SoftCosineSimilarity(bow_corpus, similarity_matrix)#, num_best=10)
+
+sims = docsim_index[bow_corpus]
+cosine = pd.DataFrame(data=sims)
+cosine = cosine.applymap(lambda x: round(x,4))
+cosine.to_csv(r'C:\Users\Andrew\Documents\PythonScripts\climate work\SDG article\SDG-Analysis\cosine_new.csv')
+
+#go back up for PCA again after this is run
+
+###for next time###
+#https://radimrehurek.com/gensim/auto_examples/howtos/run_doc2vec_imdb.html
+#https://radimrehurek.com/gensim/similarities/docsim.html
 
 '''resource search'''
 ###set resource conditions
@@ -437,10 +416,10 @@ food = ['seeds', 'agriculture', 'irrigation']
 fiscal = ['subsidy', 'fund', 'trade', 'finance', 'investment']
 research = ['research', 'framework', 'assess', 'monitor']
 conservation = ['conservation', 'civil engineer', 'biodiversity']
-legal_politcal = ['democratic', 'rights', 'policy', 'law']
+legal_political = ['democratic', 'rights', 'policy', 'law']
 
-all_resources = [technology, training, food, fiscal, research, conservation, legal_politcal]
-all_resources_words = ['technology','training', 'food', 'fiscal', 'research', 'conservation', 'legal_politcal','other']
+all_resources = [technology, training, food, fiscal, research, conservation, legal_political]
+all_resources_words = ['technology','training', 'food', 'fiscal', 'research', 'conservation', 'legal_political','other']
 #get one-hot dataframe
 resource_tracker = []
 for idx,desc in enumerate(df["description"]):
@@ -470,9 +449,9 @@ pivot["goal"] = pivot["goal"].apply(lambda x: goal_dict[x])
 pivot.set_index("goal",inplace=True)
 pivot = pivot[all_resources_words]
 fig = px.bar(pivot,orientation='h')
-plot(fig, filename="resources_stacked.html")
+# plot(fig, filename="resources_stacked.html")
 
 pivot_pct = pivot.div(pivot.sum(axis=1),axis=0)
 fig = px.bar(pivot_pct,orientation='h')
-plot(fig, filename="resources_pct.html")
+# plot(fig, filename="resources_pct.html")
 
